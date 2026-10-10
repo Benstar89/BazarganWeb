@@ -571,9 +571,7 @@ ul[role="list"] {
 .mobile-menu-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(4, 10, 22, 0.72);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(4, 10, 22, 0.95);
   opacity: 0;
   transition: opacity 0.35s ease;
 }
@@ -593,7 +591,7 @@ ul[role="list"] {
   border-right: none;
   border-left: 1px solid rgba(255,255,255,0.08);
   transform: translateX(105%);
-  transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.35s ease;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -2669,7 +2667,7 @@ ul[role="list"] {
   }
 
   .mobile-menu {
-    transition: visibility 0.4s;
+    transition: visibility 0.35s;
   }
   
   .mobile-menu.open {
