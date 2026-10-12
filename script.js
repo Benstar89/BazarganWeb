@@ -75,30 +75,48 @@ function initSmoothScroll() {
       const target = document.querySelector(targetId);
       if (!target) return;
       e.preventDefault();
-      closeMobileMenu();
-      const navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-height')) || 64;
-      const top = target.getBoundingClientRect().top + window.scrollY - navH - 12;
-      window.scrollTo({ top, behavior: 'smooth' });
+
+      const isMobileMenuLink = Boolean(this.closest('#mobile-menu'));
+      if (isMobileMenuLink && mobileMenuOpen) {
+        closeMobileMenu();
+        // Give menu slide-out a slight head start before triggering page scroll
+        setTimeout(() => {
+          const navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-height')) || 64;
+          const top = target.getBoundingClientRect().top + window.scrollY - navH - 12;
+          window.scrollTo({ top, behavior: 'smooth' });
+        }, 120);
+      } else {
+        const navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-height')) || 64;
+        const top = target.getBoundingClientRect().top + window.scrollY - navH - 12;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
     });
   });
 }
 
 /* ─── MOBILE MENU ────────────────────────────────────────────────── */
 let mobileMenuOpen = false;
+let unlockScrollTimeout = null;
 
 function openMobileMenu() {
   const menu = document.getElementById('mobile-menu');
   const btn  = document.getElementById('hamburger-btn');
   if (!menu || !btn) return;
 
+  if (unlockScrollTimeout) {
+    clearTimeout(unlockScrollTimeout);
+    unlockScrollTimeout = null;
+  }
+
   menu.classList.add('open');
+  document.body.classList.add('menu-open');
   btn.setAttribute('aria-expanded', 'true');
   document.body.style.overflow = 'hidden';
   mobileMenuOpen = true;
 
   // Focus first nav link after transition
   const firstLink = menu.querySelector('.mobile-nav-link');
-  if (firstLink) setTimeout(() => firstLink.focus(), 380);
+  if (firstLink) setTimeout(() => firstLink.focus(), 260);
 }
 
 function closeMobileMenu() {
@@ -109,8 +127,16 @@ function closeMobileMenu() {
 
   menu.classList.remove('open');
   btn.setAttribute('aria-expanded', 'false');
-  document.body.style.overflow = '';
   mobileMenuOpen = false;
+
+  // Crucial: keep body overflow locked until the 250ms slide-out animation finishes!
+  // Restoring overflow synchronously causes instant layout reflow / GPU stall on mobile devices.
+  if (unlockScrollTimeout) clearTimeout(unlockScrollTimeout);
+  unlockScrollTimeout = setTimeout(() => {
+    document.body.classList.remove('menu-open');
+    document.body.style.overflow = '';
+    unlockScrollTimeout = null;
+  }, 260);
 }
 
 function initMobileMenu() {
@@ -126,8 +152,19 @@ function initMobileMenu() {
     mobileMenuOpen ? closeMobileMenu() : openMobileMenu();
   });
 
-  if (closeBtn)  closeBtn.addEventListener('click', closeMobileMenu);
-  if (overlay)   overlay.addEventListener('click', closeMobileMenu);
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeMobileMenu();
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeMobileMenu();
+    });
+  }
 
   // Escape key
   document.addEventListener('keydown', (e) => {
@@ -139,7 +176,9 @@ function initMobileMenu() {
 
   // Nav links inside menu
   menu.querySelectorAll('.mobile-nav-link, .btn').forEach(link => {
-    link.addEventListener('click', closeMobileMenu);
+    link.addEventListener('click', () => {
+      if (mobileMenuOpen) closeMobileMenu();
+    });
   });
 }
 
