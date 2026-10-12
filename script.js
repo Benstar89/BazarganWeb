@@ -116,7 +116,7 @@ function openMobileMenu() {
 
   // Focus first nav link after transition
   const firstLink = menu.querySelector('.mobile-nav-link');
-  if (firstLink) setTimeout(() => firstLink.focus(), 260);
+  if (firstLink) setTimeout(() => firstLink.focus(), 230);
 }
 
 function closeMobileMenu() {
@@ -129,14 +129,14 @@ function closeMobileMenu() {
   btn.setAttribute('aria-expanded', 'false');
   mobileMenuOpen = false;
 
-  // Crucial: keep body overflow locked until the 250ms slide-out animation finishes!
+  // Crucial: keep body overflow locked until the 220ms slide-out animation finishes!
   // Restoring overflow synchronously causes instant layout reflow / GPU stall on mobile devices.
   if (unlockScrollTimeout) clearTimeout(unlockScrollTimeout);
   unlockScrollTimeout = setTimeout(() => {
     document.body.classList.remove('menu-open');
     document.body.style.overflow = '';
     unlockScrollTimeout = null;
-  }, 260);
+  }, 230);
 }
 
 function initMobileMenu() {
@@ -459,13 +459,33 @@ function initPageProgress() {
   }, 16), { passive: true });
 }
 
-/* ─── GLOBE PAUSE ────────────────────────────────────────────────── */
+/* ─── GLOBE OPTIMIZATION ─────────────────────────────────────────── */
 function initGlobeOptimization() {
   const globe = document.querySelector('.globe-wrapper');
+  const svg   = document.querySelector('.globe-svg');
   if (!globe) return;
 
+  const applyDeviceOptimization = () => {
+    if (window.innerWidth <= 1024) {
+      globe.style.animation = 'none';
+      if (svg && typeof svg.pauseAnimations === 'function') {
+        try { svg.pauseAnimations(); } catch (e) {}
+      }
+    } else {
+      globe.style.animation = '';
+      if (svg && typeof svg.unpauseAnimations === 'function') {
+        try { svg.unpauseAnimations(); } catch (e) {}
+      }
+    }
+  };
+
+  applyDeviceOptimization();
+  window.addEventListener('resize', debounce(applyDeviceOptimization, 200));
+
   const obs = new IntersectionObserver(entries => {
-    globe.style.animationPlayState = entries[0].isIntersecting ? 'running' : 'paused';
+    if (window.innerWidth > 1024) {
+      globe.style.animationPlayState = entries[0].isIntersecting ? 'running' : 'paused';
+    }
   }, { threshold: 0.1 });
   obs.observe(globe);
 }
